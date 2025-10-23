@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from typing import List
 from app.core.database import get_db
@@ -13,10 +13,19 @@ from app.schemas.common import SuccessResponse
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
-def get_current_user(token: str = Depends(verify_token), db: Session = Depends(get_db)):
+def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)):
     """Get current authenticated user."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header"
+        )
+    
+    token = authorization.split(" ")[1]
+    payload = verify_token(token)
+    
     auth_service = AuthService(db)
-    user = auth_service.get_user_by_email(token["sub"])
+    user = auth_service.get_user_by_email(payload["sub"])
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

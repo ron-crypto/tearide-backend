@@ -3,6 +3,7 @@ from .ride import RideRequest, RideResponse, RideHistory, RideEstimate
 from .payment import PaymentRequest, PaymentResponse, PaymentHistory, PaymentMethodCreate, PaymentMethodResponse
 from .notification import NotificationResponse, NotificationHistory
 from .auth import AuthResponse, TokenResponse
+from .driver import DriverStatus, DriverEarnings, RideRequestResponse, DriverStats
 from .common import ErrorResponse, SuccessResponse
 
 __all__ = [
@@ -16,6 +17,8 @@ __all__ = [
     "NotificationResponse", "NotificationHistory",
     # Auth schemas
     "AuthResponse", "TokenResponse",
+    # Driver schemas
+    "DriverStatus", "DriverEarnings", "RideRequestResponse", "DriverStats",
     # Common schemas
     "ErrorResponse", "SuccessResponse"
 ]

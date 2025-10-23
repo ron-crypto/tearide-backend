@@ -6,6 +6,7 @@ import uuid
 
 from app.models.ride import Ride, RideStatus, RideType
 from app.models.user import User
+from app.models.rating import Rating
 from app.schemas.ride import RideRequest, RideEstimate
 
 class RideService:
@@ -107,4 +108,82 @@ class RideService:
             User.role == "driver",
             User.is_verified == True
         ).limit(10).all()
+    
+    def get_ride_by_id(self, ride_id: str) -> Optional[Ride]:
+        """Get ride by ID."""
+        return self.db.query(Ride).filter(Ride.id == ride_id).first()
+    
+    def cancel_ride(self, ride_id: str, reason: Optional[str] = None) -> Ride:
+        """Cancel a ride."""
+        ride = self.get_ride_by_id(ride_id)
+        if not ride:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ride not found"
+            )
+        
+        ride.status = RideStatus.CANCELLED
+        ride.cancelled_at = datetime.utcnow()
+        ride.cancellation_reason = reason
+        
+        self.db.commit()
+        self.db.refresh(ride)
+        
+        return ride
+    
+    def complete_ride(self, ride_id: str) -> Ride:
+        """Complete a ride."""
+        ride = self.get_ride_by_id(ride_id)
+        if not ride:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ride not found"
+            )
+        
+        ride.status = RideStatus.COMPLETED
+        ride.completed_at = datetime.utcnow()
+        
+        self.db.commit()
+        self.db.refresh(ride)
+        
+        return ride
+    
+    def rate_ride(self, ride_id: str, user_id: str, rating: int, comment: Optional[str] = None) -> None:
+        """Rate a ride."""
+        ride = self.get_ride_by_id(ride_id)
+        if not ride:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ride not found"
+            )
+        
+        # Check if user is passenger or driver
+        if ride.passenger_id == user_id:
+            # Passenger rating driver
+            rating_obj = Rating(
+                id=str(uuid.uuid4()),
+                ride_id=ride_id,
+                passenger_id=user_id,
+                driver_id=ride.driver_id,
+                passenger_rating=rating,
+                passenger_comment=comment
+            )
+        elif ride.driver_id == user_id:
+            # Driver rating passenger
+            rating_obj = Rating(
+                id=str(uuid.uuid4()),
+                ride_id=ride_id,
+                passenger_id=ride.passenger_id,
+                driver_id=user_id,
+                driver_rating=rating,
+                driver_comment=comment
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to rate this ride"
+            )
+        
+        self.db.add(rating_obj)
+        self.db.commit()
 

@@ -9,7 +9,7 @@ import logging
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.v1 import auth, users, rides, payments, notifications
+from app.api.v1 import auth, users, rides, payments, notifications, drivers
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -91,6 +91,7 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(rides.router, prefix="/api/v1")
 app.include_router(payments.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(drivers.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn
